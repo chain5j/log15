@@ -1,0 +1,2 @@
+# github.com/go-stack/stack v1.8.0
+github.com/go-stack/stack
