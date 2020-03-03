@@ -26,6 +26,8 @@ const (
 	LvlTrace
 )
 
+const ModuleKey = "module"
+
 // AlignedString returns a 5-character string containing the name of a Lvl.
 func (l Lvl) AlignedString() string {
 	switch l {
@@ -89,6 +91,7 @@ func LvlFromString(lvlString string) (Lvl, error) {
 
 // A Record is what a Logger asks its handler to write
 type Record struct {
+	Module   string
 	Time     time.Time
 	Lvl      Lvl
 	Msg      string
@@ -126,17 +129,19 @@ type Logger interface {
 }
 
 type logger struct {
-	ctx []interface{}
-	h   *swapHandler
+	module string
+	ctx    []interface{}
+	h      *swapHandler
 }
 
 func (l *logger) write(msg string, lvl Lvl, ctx []interface{}, skip int) {
 	l.h.Log(&Record{
-		Time: time.Now(),
-		Lvl:  lvl,
-		Msg:  msg,
-		Ctx:  newContext(l.ctx, ctx),
-		Call: stack.Caller(skip),
+		Module: l.module,
+		Time:   time.Now(),
+		Lvl:    lvl,
+		Msg:    msg,
+		Ctx:    newContext(l.ctx, ctx),
+		Call:   stack.Caller(skip),
 		KeyNames: RecordKeyNames{
 			Time: timeKey,
 			Msg:  msgKey,
@@ -147,7 +152,23 @@ func (l *logger) write(msg string, lvl Lvl, ctx []interface{}, skip int) {
 }
 
 func (l *logger) New(ctx ...interface{}) Logger {
-	child := &logger{newContext(l.ctx, ctx), new(swapHandler)}
+	var moduleName string
+	if ctx != nil && len(ctx) >= 2 {
+		module1 := ctx[0]
+		if module1 == ModuleKey {
+			moduleName = ctx[1].(string)
+		}
+	}
+	child := &logger{moduleName, newContext(l.ctx, ctx), new(swapHandler)}
+	child.SetHandler(l.h)
+	return child
+}
+
+func (l *logger) NewModule(moduleName string, ctx1 ...interface{}) Logger {
+	ctx := []interface{}{ModuleKey, moduleName}
+	ctx = append(ctx, ctx1...)
+
+	child := &logger{moduleName, newContext(l.ctx, ctx), new(swapHandler)}
 	child.SetHandler(l.h)
 	return child
 }

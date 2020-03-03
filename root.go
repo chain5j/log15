@@ -5,7 +5,7 @@ import (
 )
 
 var (
-	root          = &logger{[]interface{}{}, new(swapHandler)}
+	root          = &logger{"", []interface{}{}, new(swapHandler)}
 	StdoutHandler = StreamHandler(os.Stdout, LogfmtFormat())
 	StderrHandler = StreamHandler(os.Stderr, LogfmtFormat())
 )
@@ -18,6 +18,10 @@ func init() {
 // New is a convenient alias for Root().New
 func New(ctx ...interface{}) Logger {
 	return root.New(ctx...)
+}
+
+func NewModule(moduleName string, ctx ...interface{}) Logger {
+	return root.NewModule(moduleName, ctx...)
 }
 
 // Root returns the root logger

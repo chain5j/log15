@@ -27,10 +27,11 @@ type GlogHandler struct {
 	override  uint32 // Flag whether overrides are used, atomically accessible
 	backtrace uint32 // Flag whether backtrace location is set
 
-	patterns  []pattern       // Current list of patterns to override with
-	siteCache map[uintptr]Lvl // Cache of callsite pattern evaluations
-	location  string          // file:line location where to do a stackdump at
-	lock      sync.RWMutex    // Lock protecting the override pattern list
+	patterns       []pattern       // Current list of patterns to override with
+	siteCache      map[uintptr]Lvl // Cache of callsite pattern evaluations
+	location       string          // file:line location where to do a stackdump at
+	lock           sync.RWMutex    // Lock protecting the override pattern list
+	modulePatterns map[string]string
 }
 
 // NewGlogHandler creates a new log handler with filtering functionality similar
@@ -127,6 +128,17 @@ func (h *GlogHandler) Vmodule(ruleset string) error {
 	return nil
 }
 
+func (h *GlogHandler) VModules(modules []string) {
+	h.modulePatterns = make(map[string]string)
+	if modules == nil {
+		h.modulePatterns["*"] = "*"
+	} else {
+		for _, v := range modules {
+			h.modulePatterns[v] = v
+		}
+	}
+}
+
 // BacktraceAt sets the glog backtrace location. When set to a file and line
 // number holding a logging statement, a stack trace will be written to the Info
 // log whenever execution hits that statement.
@@ -182,7 +194,7 @@ func (h *GlogHandler) Log(r *Record) error {
 		}
 	}
 	// If the global log level allows, fast track logging
-	if atomic.LoadUint32(&h.level) >= uint32(r.Lvl) {
+	if atomic.LoadUint32(&h.level) >= uint32(r.Lvl)  && h.modulePattern(r) {
 		return h.origin.Log(r)
 	}
 	// If no local overrides are present, fast track skipping
@@ -209,8 +221,21 @@ func (h *GlogHandler) Log(r *Record) error {
 		}
 		h.lock.Unlock()
 	}
-	if lvl >= r.Lvl {
+	if lvl >= r.Lvl  && h.modulePattern(r) {
 		return h.origin.Log(r)
 	}
 	return nil
+}
+
+func (h *GlogHandler) modulePattern(r *Record) bool {
+	if h.modulePatterns == nil || len(h.modulePatterns) == 0 {
+		return true
+	}
+	if _, ok := h.modulePatterns["*"]; ok {
+		return true
+	}
+	if _, ok := h.modulePatterns[r.Module]; ok {
+		return true
+	}
+	return false
 }
