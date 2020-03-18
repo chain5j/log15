@@ -57,6 +57,7 @@ type pattern struct {
 // Verbosity sets the glog verbosity ceiling. The verbosity of individual packages
 // and source files can be raised using Vmodule.
 func (h *GlogHandler) Verbosity(level Lvl) {
+	logLevel = uint32(level)
 	atomic.StoreUint32(&h.level, uint32(level))
 }
 
