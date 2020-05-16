@@ -10,9 +10,9 @@ import (
 	"testing"
 )
 
-var(
-	ostream  log.Handler
-	glogger  *log.GlogHandler
+var (
+	ostream log.Handler
+	glogger *log.GlogHandler
 )
 
 func TestLog(t *testing.T) {
@@ -23,15 +23,15 @@ func TestLog(t *testing.T) {
 	//	output = colorable.NewColorableStderr()
 	//}
 	//ostream = log.StreamHandler(output, log.TerminalFormat(usecolor))// usecolor表示日志是否颜色显示
-	ostream = log.StreamHandler(os.Stderr, log.TerminalFormat(true))// usecolor表示日志是否颜色显示
+	ostream = log.StreamHandler(os.Stderr, log.TerminalFormat(true)) // usecolor表示日志是否颜色显示
 	glogger = log.NewGlogHandler(ostream)
-	glogger.Verbosity(log.Lvl(5))// 日志级别
+	glogger.Verbosity(log.Lvl(5)) // 日志级别
 
 	//glogger.Vmodule(*vmodule)
 	log.Root().SetHandler(glogger)
 
 	// all loggers can have key/value context
-	srvlog := log.New("module", "app/server")
+	srvlog := log.New("app/server")
 
 	// all log messages can have key/value context
 	srvlog.Warn("abnormal conn rate", "rate", "curRate", "low", "lowRate", "high", "highRate")

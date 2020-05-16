@@ -32,6 +32,8 @@ import log "github.com/chain5j/log15"
 // all loggers can have key/value context
 srvlog := log.New("module", "app/server")
 
+// srvlog := log.New("app/server")// if the first word is not "module",the lib will add "module" auto
+
 // all log messages can have key/value context
 srvlog.Warn("abnormal conn rate", "rate", curRate, "low", lowRate, "high", highRate)
 
