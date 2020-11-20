@@ -137,10 +137,12 @@ func TerminalFormat(usecolor bool) Format {
 		length := utf8.RuneCountInString(r.Msg)
 		length = len(r.Msg)
 		justLen := termMsgJust - utf8.RuneCountInString(r.Module)
-		if len(r.Ctx) > 0 && length < justLen {
-			b.Write(bytes.Repeat([]byte{' '}, justLen-length))
-		} else {
-			b.WriteString(" --> ")
+		if len(r.Ctx) > 0 {
+			if length < justLen {
+				b.Write(bytes.Repeat([]byte{' '}, justLen-length))
+			} else {
+				b.WriteString(" --> ")
+			}
 		}
 		// print the keys logfmt style
 		logfmt(b, r.Ctx, color, true)
