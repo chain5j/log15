@@ -14,11 +14,10 @@ import (
 )
 
 const (
-	timeFormat        = "2006-01-02T15:04:05-0700"
-	termTimeFormat    = "01-02|15:04:05.000"
-	floatFormat       = 'f'
-	termMsgJust       = 40
-	termMsgJustNative = 36
+	timeFormat     = "2006-01-02T15:04:05-0700"
+	termTimeFormat = "2006-01-02 15:04:05.000"
+	floatFormat    = 'f'
+	termMsgJust    = 40
 )
 
 // locationTrims are trimmed for display to avoid unwieldy log lines.
@@ -120,27 +119,60 @@ func TerminalFormat(usecolor bool) Format {
 			padding := strings.Repeat(" ", align-len(location))
 
 			// Assemble and print the log heading
+			module := r.Module
 			if color > 0 {
-				fmt.Fprintf(b, "\x1b[%dm%s\x1b[0m[%s|%s]%s \u001B[%dm[%s]\u001B[0m %s ", color, lvl, r.Time.Format(termTimeFormat), location, color, padding, r.Module, r.Msg)
-			} else {
-				fmt.Fprintf(b, "%s[%s|%s]%s [%s] %s ", lvl, r.Time.Format(termTimeFormat), location, padding, r.Module, r.Msg)
+				lvl = colorRender(lvl, color, 0)
+				module = colorRender(module, color, 0)
 			}
+			fmt.Fprintf(b, "%s [%s] [%s] %s %s %s", lvl, r.Time.Format(termTimeFormat), module, location, padding, r.Msg)
 		} else {
+			module := r.Module
 			if color > 0 {
-				fmt.Fprintf(b, "\x1b[%dm%s\x1b[0m[%s] \u001B[%dm[%s]\u001B[0m %s ", color, lvl, r.Time.Format(termTimeFormat), color, r.Module, r.Msg)
-			} else {
-				fmt.Fprintf(b, "%s[%s] [%s] %s ", lvl, r.Time.Format(termTimeFormat), r.Module, r.Msg)
+				lvl = colorRender(lvl, color, 0)
+				module = colorRender(module, color, 0)
 			}
+			fmt.Fprintf(b, "%s [%s] [%s] %s", lvl, r.Time.Format(termTimeFormat), module, r.Msg)
 		}
 		// try to justify the log output for short messages
 		length := utf8.RuneCountInString(r.Msg)
-		if len(r.Ctx) > 0 && length < termMsgJust {
-			b.Write(bytes.Repeat([]byte{' '}, termMsgJust-length))
+		length = len(r.Msg)
+		justLen := termMsgJust - utf8.RuneCountInString(r.Module)
+		if len(r.Ctx) > 0 && length < justLen {
+			b.Write(bytes.Repeat([]byte{' '}, justLen-length))
+		} else {
+			b.WriteString(" --> ")
 		}
 		// print the keys logfmt style
 		logfmt(b, r.Ctx, color, true)
 		return b.Bytes()
 	})
+}
+
+func colorRender(str string, color int, weight int, extraArgs ...interface{}) string {
+	//闪烁效果
+	isBlink := int64(0)
+	if len(extraArgs) > 0 {
+		isBlink = reflect.ValueOf(extraArgs[0]).Int()
+	}
+	//下划线效果
+	isUnderLine := int64(0)
+	if len(extraArgs) > 1 {
+		isUnderLine = reflect.ValueOf(extraArgs[1]).Int()
+	}
+	var mo []string
+	if isBlink > 0 {
+		mo = append(mo, "05")
+	}
+	if isUnderLine > 0 {
+		mo = append(mo, "04")
+	}
+	if weight > 0 {
+		mo = append(mo, fmt.Sprintf("%d", weight))
+	}
+	if len(mo) <= 0 {
+		mo = append(mo, "0")
+	}
+	return fmt.Sprintf("\033[%s;%dm"+str+"\033[0m", strings.Join(mo, ";"), color)
 }
 
 // LogfmtFormat prints records in logfmt format, an easy machine-parseable but human-readable

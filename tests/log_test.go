@@ -36,10 +36,18 @@ func TestLog(t *testing.T) {
 	// all log messages can have key/value context
 	//srvlog.Warn("abnormal conn rate", "rate", "curRate", "low", "lowRate", "high", "highRate")
 
-	srvlog.Print("aaaaaa")
-	srvlog.Print(111, 222, 333, "12345")
+	//srvlog.Print("aaaaaa")
+	//srvlog.Print(111, 222, 333, "12345")
+	log.PrintOrigins(false)
+	testLog := log.New("send next round change", "aa", "你好")
+	testLog.Debug("send", "sta", "aaa")
+	testLog.Info("send next round change222")
+	testLog.Error("send next round change222")
 
-	srvlog.Fatal("111")
+	testLog2 := log.New("pbftcore", "aa", "你好")
+	testLog2.Debug("send next round change send next round change send next round change send next round change", "sta", "aaa")
+	testLog2.Info("send ")
+	testLog2.Error("send next round change222")
 
 	// child loggers with inherited context
 	connlog := srvlog.New("srvlog", "raddr", "127.0.0.1")

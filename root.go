@@ -18,9 +18,6 @@ func init() {
 // New returns a new logger with the given context.
 // New is a convenient alias for Root().New
 func New(module string, ctx ...interface{}) Logger {
-	if ctx != nil && len(ctx) > 0 && ctx[0] != ModuleKey {
-		ctx = append([]interface{}{ModuleKey}, ctx...)
-	}
 	return root.New(module, ctx...)
 }
 
