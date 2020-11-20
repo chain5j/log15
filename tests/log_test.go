@@ -34,10 +34,15 @@ func TestLog(t *testing.T) {
 	srvlog := log.New("app/server")
 
 	// all log messages can have key/value context
-	srvlog.Warn("abnormal conn rate", "rate", "curRate", "low", "lowRate", "high", "highRate")
+	//srvlog.Warn("abnormal conn rate", "rate", "curRate", "low", "lowRate", "high", "highRate")
+
+	srvlog.Print("aaaaaa")
+	srvlog.Print(111, 222, 333, "12345")
+
+	srvlog.Fatal("111")
 
 	// child loggers with inherited context
-	connlog := srvlog.New("raddr", "127.0.0.1")
+	connlog := srvlog.New("srvlog", "raddr", "127.0.0.1")
 	connlog.Info("connection open")
 
 	// lazy evaluation

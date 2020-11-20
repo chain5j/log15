@@ -14,10 +14,11 @@ import (
 )
 
 const (
-	timeFormat     = "2006-01-02T15:04:05-0700"
-	termTimeFormat = "01-02|15:04:05.000"
-	floatFormat    = 'f'
-	termMsgJust    = 40
+	timeFormat        = "2006-01-02T15:04:05-0700"
+	termTimeFormat    = "01-02|15:04:05.000"
+	floatFormat       = 'f'
+	termMsgJust       = 40
+	termMsgJustNative = 36
 )
 
 // locationTrims are trimmed for display to avoid unwieldy log lines.
@@ -120,15 +121,15 @@ func TerminalFormat(usecolor bool) Format {
 
 			// Assemble and print the log heading
 			if color > 0 {
-				fmt.Fprintf(b, "\x1b[%dm%s\x1b[0m[%s|%s]%s %s ", color, lvl, r.Time.Format(termTimeFormat), location, padding, r.Msg)
+				fmt.Fprintf(b, "\x1b[%dm%s\x1b[0m[%s|%s]%s \u001B[%dm[%s]\u001B[0m %s ", color, lvl, r.Time.Format(termTimeFormat), location, color, padding, r.Module, r.Msg)
 			} else {
-				fmt.Fprintf(b, "%s[%s|%s]%s %s ", lvl, r.Time.Format(termTimeFormat), location, padding, r.Msg)
+				fmt.Fprintf(b, "%s[%s|%s]%s [%s] %s ", lvl, r.Time.Format(termTimeFormat), location, padding, r.Module, r.Msg)
 			}
 		} else {
 			if color > 0 {
-				fmt.Fprintf(b, "\x1b[%dm%s\x1b[0m[%s] %s ", color, lvl, r.Time.Format(termTimeFormat), r.Msg)
+				fmt.Fprintf(b, "\x1b[%dm%s\x1b[0m[%s] \u001B[%dm[%s]\u001B[0m %s ", color, lvl, r.Time.Format(termTimeFormat), color, r.Module, r.Msg)
 			} else {
-				fmt.Fprintf(b, "%s[%s] %s ", lvl, r.Time.Format(termTimeFormat), r.Msg)
+				fmt.Fprintf(b, "%s[%s] [%s] %s ", lvl, r.Time.Format(termTimeFormat), r.Module, r.Msg)
 			}
 		}
 		// try to justify the log output for short messages
@@ -149,7 +150,16 @@ func TerminalFormat(usecolor bool) Format {
 //
 func LogfmtFormat() Format {
 	return FormatFunc(func(r *Record) []byte {
-		common := []interface{}{r.KeyNames.Time, r.Time, r.KeyNames.Lvl, r.Lvl, r.KeyNames.Msg, r.Msg}
+		common := []interface{}{
+			r.KeyNames.Time,
+			r.Time,
+			r.KeyNames.Lvl,
+			r.Lvl,
+			r.KeyNames.Module,
+			r.Module,
+			r.KeyNames.Msg,
+			r.Msg,
+		}
 		buf := &bytes.Buffer{}
 		logfmt(buf, append(common, r.Ctx...), 0, false)
 		return buf.Bytes()
