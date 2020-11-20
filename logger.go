@@ -180,12 +180,6 @@ func (l *logger) New(module string, ctx ...interface{}) Logger {
 }
 
 func newContext(prefix []interface{}, suffix []interface{}) []interface{} {
-	//if native {
-	//	newCtx := make([]interface{}, len(prefix)+len(suffix))
-	//	n := copy(newCtx, prefix)
-	//	copy(newCtx[n:], suffix)
-	//	return newCtx
-	//}
 	normalizedSuffix := normalize(suffix)
 	newCtx := make([]interface{}, len(prefix)+len(normalizedSuffix))
 	n := copy(newCtx, prefix)
