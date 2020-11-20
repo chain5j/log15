@@ -2,6 +2,7 @@ package log
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"time"
 
@@ -102,16 +103,17 @@ type Record struct {
 
 // RecordKeyNames gets stored in a Record when the write function is executed.
 type RecordKeyNames struct {
-	Time string
-	Msg  string
-	Lvl  string
-	Ctx  string
+	Time   string
+	Lvl    string
+	Module string
+	Msg    string
+	Ctx    string
 }
 
 // A Logger writes key/value pairs to a Handler
 type Logger interface {
 	// New returns a new Logger that has this logger's context plus the given context
-	New(ctx ...interface{}) Logger
+	New(module string, ctx ...interface{}) Logger
 
 	// GetHandler gets the handler associated with the logger.
 	GetHandler() Handler
@@ -126,9 +128,21 @@ type Logger interface {
 	Warn(msg string, ctx ...interface{})
 	Error(msg string, ctx ...interface{})
 	Crit(msg string, ctx ...interface{})
+
+	// log
+	Printf(format string, v ...interface{})
+	Print(v ...interface{})
+	Println(v ...interface{})
+	Fatal(v ...interface{})
+	Fatalf(format string, v ...interface{})
+	Fatalln(v ...interface{})
+	Panic(v ...interface{})
+	Panicf(format string, v ...interface{})
+	Panicln(v ...interface{})
 }
 
 type logger struct {
+	*log.Logger
 	module string
 	ctx    []interface{}
 	h      *swapHandler
@@ -143,37 +157,35 @@ func (l *logger) write(msg string, lvl Lvl, ctx []interface{}, skip int) {
 		Ctx:    newContext(l.ctx, ctx),
 		Call:   stack.Caller(skip),
 		KeyNames: RecordKeyNames{
-			Time: timeKey,
-			Msg:  msgKey,
-			Lvl:  lvlKey,
-			Ctx:  ctxKey,
+			Time:   timeKey,
+			Lvl:    lvlKey,
+			Module: ModuleKey,
+			Msg:    msgKey,
+			Ctx:    ctxKey,
 		},
 	})
 }
 
-func (l *logger) New(ctx ...interface{}) Logger {
-	var moduleName string
-	if ctx != nil && len(ctx) >= 2 {
-		module1 := ctx[0]
-		if module1 == ModuleKey {
-			moduleName = ctx[1].(string)
-		}
+var std = log.New(os.Stderr, "", log.LstdFlags)
+
+func (l *logger) New(module string, ctx ...interface{}) Logger {
+	child := &logger{
+		Logger: std,
+		module: module,
+		ctx:    newContext(l.ctx, ctx),
+		h:      new(swapHandler),
 	}
-	child := &logger{moduleName, newContext(l.ctx, ctx), new(swapHandler)}
-	child.SetHandler(l.h)
-	return child
-}
-
-func (l *logger) NewModule(moduleName string, ctx1 ...interface{}) Logger {
-	ctx := []interface{}{ModuleKey, moduleName}
-	ctx = append(ctx, ctx1...)
-
-	child := &logger{moduleName, newContext(l.ctx, ctx), new(swapHandler)}
 	child.SetHandler(l.h)
 	return child
 }
 
 func newContext(prefix []interface{}, suffix []interface{}) []interface{} {
+	//if native {
+	//	newCtx := make([]interface{}, len(prefix)+len(suffix))
+	//	n := copy(newCtx, prefix)
+	//	copy(newCtx[n:], suffix)
+	//	return newCtx
+	//}
 	normalizedSuffix := normalize(suffix)
 	newCtx := make([]interface{}, len(prefix)+len(normalizedSuffix))
 	n := copy(newCtx, prefix)
@@ -182,46 +194,93 @@ func newContext(prefix []interface{}, suffix []interface{}) []interface{} {
 }
 
 func (l *logger) Trace(msg string, ctx ...interface{}) {
-	if logLevel< uint32(LvlTrace) {
+	if logLevel < uint32(LvlTrace) {
 		return
 	}
 	l.write(msg, LvlTrace, ctx, skipLevel)
 }
 
 func (l *logger) Debug(msg string, ctx ...interface{}) {
-	if logLevel< uint32(LvlDebug) {
+	if logLevel < uint32(LvlDebug) {
 		return
 	}
 	l.write(msg, LvlDebug, ctx, skipLevel)
 }
 
 func (l *logger) Info(msg string, ctx ...interface{}) {
-	if logLevel< uint32(LvlInfo) {
+	if logLevel < uint32(LvlInfo) {
 		return
 	}
 	l.write(msg, LvlInfo, ctx, skipLevel)
 }
 
 func (l *logger) Warn(msg string, ctx ...interface{}) {
-	if logLevel< uint32(LvlWarn) {
+	if logLevel < uint32(LvlWarn) {
 		return
 	}
 	l.write(msg, LvlWarn, ctx, skipLevel)
 }
 
 func (l *logger) Error(msg string, ctx ...interface{}) {
-	if logLevel< uint32(LvlError) {
+	if logLevel < uint32(LvlError) {
 		return
 	}
 	l.write(msg, LvlError, ctx, skipLevel)
 }
 
 func (l *logger) Crit(msg string, ctx ...interface{}) {
-	if logLevel< uint32(LvlCrit) {
+	if logLevel < uint32(LvlCrit) {
 		return
 	}
 	l.write(msg, LvlCrit, ctx, skipLevel)
 	os.Exit(1)
+}
+
+// native
+
+func (l *logger) Printf(format string, v ...interface{}) {
+	l.write(fmt.Sprintf(format, v...), LvlInfo, nil, skipLevel)
+}
+
+func (l *logger) Print(v ...interface{}) {
+	l.write(fmt.Sprint(v...), LvlInfo, nil, skipLevel)
+}
+
+func (l *logger) Println(v ...interface{}) {
+	l.write(fmt.Sprintln(v...), LvlInfo, nil, skipLevel)
+}
+
+func (l *logger) Fatal(v ...interface{}) {
+	l.write(fmt.Sprint(v...), LvlCrit, nil, skipLevel)
+	os.Exit(1)
+}
+
+func (l *logger) Fatalf(format string, v ...interface{}) {
+	l.write(fmt.Sprintf(format, v...), LvlCrit, nil, skipLevel)
+	os.Exit(1)
+}
+
+func (l *logger) Fatalln(v ...interface{}) {
+	l.write(fmt.Sprintln(v...), LvlCrit, nil, skipLevel)
+	os.Exit(1)
+}
+
+func (l *logger) Panic(v ...interface{}) {
+	s := fmt.Sprint(v...)
+	l.write(s, LvlCrit, nil, skipLevel)
+	panic(s)
+}
+
+func (l *logger) Panicf(format string, v ...interface{}) {
+	s := fmt.Sprintf(format, v...)
+	l.write(s, LvlCrit, nil, skipLevel)
+	panic(s)
+}
+
+func (l *logger) Panicln(v ...interface{}) {
+	s := fmt.Sprintln(v...)
+	l.write(s, LvlCrit, nil, skipLevel)
+	panic(s)
 }
 
 func (l *logger) GetHandler() Handler {

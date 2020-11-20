@@ -5,7 +5,7 @@ import (
 )
 
 var (
-	root          = &logger{"", []interface{}{}, new(swapHandler)}
+	root          = &logger{std, "", []interface{}{}, new(swapHandler)}
 	StdoutHandler = StreamHandler(os.Stdout, LogfmtFormat())
 	StderrHandler = StreamHandler(os.Stderr, LogfmtFormat())
 	logLevel      = uint32(LvlInfo)
@@ -17,15 +17,11 @@ func init() {
 
 // New returns a new logger with the given context.
 // New is a convenient alias for Root().New
-func New(ctx ...interface{}) Logger {
+func New(module string, ctx ...interface{}) Logger {
 	if ctx != nil && len(ctx) > 0 && ctx[0] != ModuleKey {
 		ctx = append([]interface{}{ModuleKey}, ctx...)
 	}
-	return root.New(ctx...)
-}
-
-func NewModule(moduleName string, ctx ...interface{}) Logger {
-	return root.NewModule(moduleName, ctx...)
+	return root.New(module, ctx...)
 }
 
 // Root returns the root logger
