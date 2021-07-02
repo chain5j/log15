@@ -467,3 +467,16 @@ func (m muster) FileHandler(path string, fmtr Format) Handler {
 func (m muster) NetHandler(network, addr string, fmtr Format) Handler {
 	return must(NetHandler(network, addr, fmtr))
 }
+
+func (m muster) RotatingFileHandler(path string, limit uint, fmtr Format) Handler {
+	return must(RotatingFileHandler(path, limit, fmtr))
+}
+
+func (m muster) RotatingDayFileHandler(dir string, fileName string, compress bool, reserveDay int, fmtr Format) Handler {
+	return must(RotatingDayFileHandler(&TimeWriter{
+		Dir:        dir,
+		FileName:   fileName,
+		Compress:   compress,
+		ReserveDay: reserveDay,
+	}, fmtr), nil)
+}

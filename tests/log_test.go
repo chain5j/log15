@@ -1,10 +1,11 @@
-// description: log 
-// 
+// description: log
+//
 // @author: xwc1125
 // @date: 2019/9/18
 package tests
 
 import (
+	"fmt"
 	"github.com/chain5j/log15"
 	"os"
 	"testing"
@@ -16,16 +17,15 @@ var (
 )
 
 func TestLog(t *testing.T) {
-	// 颜色
 	//usecolor := (isatty.IsTerminal(os.Stderr.Fd()) || isatty.IsCygwinTerminal(os.Stderr.Fd())) && os.Getenv("TERM") != "dumb"
 	//output := io.Writer(os.Stderr)
 	//if usecolor {
 	//	output = colorable.NewColorableStderr()
 	//}
-	//ostream = log.StreamHandler(output, log.TerminalFormat(usecolor))// usecolor表示日志是否颜色显示
-	ostream = log.StreamHandler(os.Stderr, log.TerminalFormat(true)) // usecolor表示日志是否颜色显示
+	//ostream = log.StreamHandler(output, log.TerminalFormat(usecolor))
+	ostream = log.StreamHandler(os.Stderr, log.TerminalFormat(true))
 	glogger = log.NewGlogHandler(ostream)
-	glogger.Verbosity(log.Lvl(5)) // 日志级别
+	glogger.Verbosity(log.Lvl(5))
 
 	//glogger.Vmodule(*vmodule)
 	log.Root().SetHandler(glogger)
@@ -62,4 +62,75 @@ func TestLog(t *testing.T) {
 		log.LvlFilterHandler(
 			log.LvlError,
 			log.Must.FileHandler("errors.json", log.JSONFormat()))))
+}
+
+func TestFileLog(t *testing.T) {
+	stream := log.StreamHandler(os.Stderr, log.TerminalFormat(true))
+	gLogger := log.NewGlogHandler(stream)
+	gLogger.Verbosity(log.Lvl(4))
+	gLogger.VModules([]string{"*"})
+	log.PrintOrigins(true) // whether print path
+
+	//consoleStream := log.StreamHandler(os.Stderr, log.TerminalFormat(true))
+	//consoleLogger := log.NewGlogHandler(consoleStream)
+	//consoleLogger.Verbosity(log.Lvl(3))
+	//consoleLogger.VModules([]string{"*"})
+	log.Root().SetHandler(gLogger)
+
+	// save file
+	gLogger.SetHandler(log.MultiHandler(
+		stream,
+		log.LvlFilterHandler(
+			log.LvlDebug,
+			log.Must.RotatingFileHandler("./logs",
+				20,
+				log.JSONFormat(),
+			),
+		),
+	))
+
+	for i := 0; ; i++ {
+		log.Debug("Debug" + fmt.Sprintf("%d", i))
+		if i/9 == 0 {
+			log.Info("Info" + fmt.Sprintf("%d", i))
+		}
+		if i/11 == 0 {
+			log.Error("Error" + fmt.Sprintf("%d", i))
+		}
+	}
+}
+
+func TestWriteLog(t *testing.T) {
+	stream := log.StreamHandler(os.Stderr, log.TerminalFormat(true))
+	gLogger := log.NewGlogHandler(stream)
+	gLogger.Verbosity(log.Lvl(4))
+	gLogger.VModules([]string{"*"})
+	log.PrintOrigins(true) // whether print path
+
+	log.Root().SetHandler(gLogger)
+
+	// save file
+	gLogger.SetHandler(log.MultiHandler(
+		stream,
+		log.LvlFilterHandler(
+			log.LvlDebug,
+			log.RotatingDayFileHandler(&log.TimeWriter{
+				Dir:        "./logs",
+				FileName:   "errors.json",
+				Compress:   true,
+				ReserveDay: 1,
+			},
+				log.JSONFormat()),
+		),
+	))
+
+	for i := 0; ; i++ {
+		log.Debug("Debug" + fmt.Sprintf("%d", i))
+		if i/9 == 0 {
+			log.Info("Info" + fmt.Sprintf("%d", i))
+		}
+		if i/11 == 0 {
+			log.Error("Error" + fmt.Sprintf("%d", i))
+		}
+	}
 }
