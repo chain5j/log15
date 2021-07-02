@@ -188,44 +188,26 @@ func newContext(prefix []interface{}, suffix []interface{}) []interface{} {
 }
 
 func (l *logger) Trace(msg string, ctx ...interface{}) {
-	if logLevel < uint32(LvlTrace) {
-		return
-	}
 	l.write(msg, LvlTrace, ctx, skipLevel)
 }
 
 func (l *logger) Debug(msg string, ctx ...interface{}) {
-	if logLevel < uint32(LvlDebug) {
-		return
-	}
 	l.write(msg, LvlDebug, ctx, skipLevel)
 }
 
 func (l *logger) Info(msg string, ctx ...interface{}) {
-	if logLevel < uint32(LvlInfo) {
-		return
-	}
 	l.write(msg, LvlInfo, ctx, skipLevel)
 }
 
 func (l *logger) Warn(msg string, ctx ...interface{}) {
-	if logLevel < uint32(LvlWarn) {
-		return
-	}
 	l.write(msg, LvlWarn, ctx, skipLevel)
 }
 
 func (l *logger) Error(msg string, ctx ...interface{}) {
-	if logLevel < uint32(LvlError) {
-		return
-	}
 	l.write(msg, LvlError, ctx, skipLevel)
 }
 
 func (l *logger) Crit(msg string, ctx ...interface{}) {
-	if logLevel < uint32(LvlCrit) {
-		return
-	}
 	l.write(msg, LvlCrit, ctx, skipLevel)
 	os.Exit(1)
 }
