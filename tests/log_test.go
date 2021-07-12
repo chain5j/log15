@@ -134,3 +134,68 @@ func TestWriteLog(t *testing.T) {
 		}
 	}
 }
+
+func TestInit(t *testing.T) {
+	log.InitLogs(&log.LogConfig{
+		Console: log.ConsoleLogConfig{
+			Level:    5,
+			Modules:  "*",
+			ShowPath: true,
+			UseColor: true,
+			Console:  false,
+		},
+		File: log.FileLogConfig{
+			Level:    4,
+			Modules:  "*",
+			Save:     false,
+			FilePath: "./logs",
+			FileName: "errors.json",
+		},
+	})
+	for i := 0; i < 1000; i++ {
+		log.Debug("Debug" + fmt.Sprintf("%d", i))
+		if i%9 == 0 {
+			log.Info("Info" + fmt.Sprintf("%d", i))
+		}
+		if i%11 == 0 {
+			log.Error("Error" + fmt.Sprintf("%d", i))
+		}
+	}
+}
+
+func TestInit2(t *testing.T) {
+	logConfig := &log.LogConfig{
+		Console: log.ConsoleLogConfig{
+			Level:    5,
+			Modules:  "*",
+			ShowPath: true,
+			UseColor: true,
+			Console:  true,
+		},
+		File: log.FileLogConfig{
+			Level:    3,
+			Modules:  "*",
+			Save:     true,
+			FilePath: "./logs",
+			FileName: "errors.json",
+		},
+	}
+	log.InitLogsWithFormat(logConfig, log.LvlFilterHandler(
+		log.Lvl(logConfig.File.Level),
+		log.RotatingDayFileHandler(&log.TimeWriter{
+			Dir:        logConfig.File.FilePath,
+			FileName:   logConfig.File.FileName,
+			Compress:   true,
+			ReserveDay: 1,
+		}, log.JSONFormat()),
+	))
+	for i := 0; i < 1000; i++ {
+		log.Debug("Debug" + fmt.Sprintf("%d", i))
+		if i%9 == 0 {
+			log.Info("Info" + fmt.Sprintf("%d", i))
+		}
+		if i%11 == 0 {
+			log.Error("Error" + fmt.Sprintf("%d", i))
+		}
+	}
+}
