@@ -1,6 +1,7 @@
 package log
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -84,14 +85,20 @@ type countingWriter struct {
 // Write increments the byte counter by the number of bytes written.
 // Implements the WriteCloser interface.
 func (w *countingWriter) Write(p []byte) (n int, err error) {
-	n, err = w.w.Write(p)
-	w.count += uint(n)
-	return n, err
+	if w.w != nil {
+		n, err = w.w.Write(p)
+		w.count += uint(n)
+		return n, err
+	}
+	return 0, errors.New("io.WriteCloser is nil")
 }
 
 // Close implements the WriteCloser interface.
 func (w *countingWriter) Close() error {
-	return w.w.Close()
+	if w.w != nil {
+		return w.w.Close()
+	}
+	return nil
 }
 
 // prepFile opens the log file at the given path, and cuts off the invalid part
